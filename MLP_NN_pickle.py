@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
+from sklearn.preprocessing import RobustScaler
 
 st.set_page_config(
      page_title="TDS parameter predictions",
@@ -11,20 +12,29 @@ st.set_page_config(
      menu_items={
          'Get Help': 'mailto:mher@ucsd.edu',
          'Report a bug': 'mailto: mher@ucsd.edu@ucsd.edu',
-         'About': "# Made for NanoEnginering Capston Project."
+         'About': "# Made for NanoEnginering Capstone Project."
      }
  )
 
-start_time = time.time()
-
-import streamlit as st
-import pandas as pd
-import pickle
-
+#Loading the trained model
 def load_model(url):
     return pickle.load(open(url,'rb'))
 
 model = load_model('MLP_NN_simple.pkl')
+
+#Displaying the Time 
+def convertMillis(milisecs):
+    millis = int(milisecs)
+    seconds = (millis/1000) % 60
+    seconds = int(seconds)
+    minutes = (millis/(1000*60)) % 60
+    minutes = int(minutes)
+    hours = (millis/(1000*60*60)) % 24
+
+    return("%d:%d:%d" % (hours, minutes, seconds))
+start_time = time.time()
+end_time = time.time()
+time_lapsed = end_time - start_time
 
 # Define the input interface
 st.write("Input the following process conditions to make predictions:")
@@ -61,9 +71,12 @@ if submit_button:
             missing_rows = np.zeros((model.n_features_in_ - data.shape[0], 1))
             data = np.concatenate((data.values, missing_rows), axis=0)
 
+        #Scaling the data according to the model
+        scaler = RobustScaler()
+        des_flux_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
 
         # Make predictions and display results
-        predictions = model.predict(data)
+        predictions = model.predict(des_flux_scaled)
         st.write("Predicted values:")
         st.write(predictions)
 
@@ -79,9 +92,9 @@ if submit_button:
             selected_data_column_2 = data.iloc[:, 1]
         # Create a list of indices to select every nth row
         index_list = list(range(0, len(selected_data_column_2)))
-        st.write(len(index_list))
-        st.write(selected_data_column_2.shape)
-        st.write(selected_data_column_2.index)
+        #st.write(len(index_list))
+        #st.write(selected_data_column_2.shape)
+        #st.write(selected_data_column_2.index)
 
         # Create a new dataframe with the downsampled second column
         data = pd.DataFrame(selected_data_column_2.iloc[index_list, 0].values, index=index_list, columns=['des_flux'])
@@ -91,9 +104,15 @@ if submit_button:
             missing_rows = np.zeros((model.n_features_in_ - data.shape[0], 1))
             data = np.concatenate((data.values, missing_rows), axis=0)
 
+        #Scaling the data according to the model
+        scaler = RobustScaler()
+        des_flux_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
 
         # Make predictions and display results
-        predictions = model.predict(data)
+        predictions = model.predict(des_flux_scaled)
         st.write("Predicted values:")
         st.write(predictions)
+    
+    
+    st.write(convertMillis(time_lapsed))
 
